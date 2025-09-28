@@ -30,15 +30,6 @@ npm install
 # 3. Inicia la aplicación
 npm run dev
 ```
-
-## Hoja de Ruta del Prototipo
-
-- [x] Script para leer eventos de la blockchain.
-- [X] Interfaz web para introducir la dirección.
-- [ ] API Serverless para conectar el frontend con el script.
-- [ ] Despliegue en Vercel/Netlify.
-- [ ] Añadir soporte para eventos loan.repaid de Acala.
-
 ## Cómo Contribuir
 
 ¡Estamos empezando! Si te interesa el proyecto, abre un "issue" o contáctanos. ¡Toda ayuda es bienvenida!
