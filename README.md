@@ -22,7 +22,7 @@ La aplicación web te permite:
 
 ```bash
 # 1. Clona el repositorio
-git clone [URL_DE_TU_REPO]
+git clone https://github.com/GumeeR/DotRep.git
 
 # 2. Instala las dependencias
 npm install
