@@ -2,8 +2,6 @@
 
 **Estado del Proyecto:**  En Desarrollo Activo (Prototipo MVP) 
 
-![DotRep Demo](https://placehold.co/600x300/1d1f21/c2c3c4?text=Demo+de+la+App)
-
 ## ¿Qué es DotRep?
 
 DotRep es una herramienta web simple que te permite explorar la actividad de cualquier billetera en el ecosistema Polkadot. Nuestro prototipo actual te permite ver eventos específicos, como transferencias o pagos de préstamos, directamente desde la blockchain.
