@@ -34,7 +34,7 @@ npm run dev
 ## Hoja de Ruta del Prototipo
 
 - [x] Script para leer eventos de la blockchain.
-- [ ] Interfaz web para introducir la dirección.
+- [X] Interfaz web para introducir la dirección.
 - [ ] API Serverless para conectar el frontend con el script.
 - [ ] Despliegue en Vercel/Netlify.
 - [ ] Añadir soporte para eventos loan.repaid de Acala.
