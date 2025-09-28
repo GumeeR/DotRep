@@ -1,0 +1,46 @@
+# DotRep: Un Explorador de Actividad On-Chain para Polkadot
+
+**Estado del Proyecto:**  En Desarrollo Activo (Prototipo MVP) 
+
+![DotRep Demo](https://placehold.co/600x300/1d1f21/c2c3c4?text=Demo+de+la+App)
+
+## ¿Qué es DotRep?
+
+DotRep es una herramienta web simple que te permite explorar la actividad de cualquier billetera en el ecosistema Polkadot. Nuestro prototipo actual te permite ver eventos específicos, como transferencias o pagos de préstamos, directamente desde la blockchain.
+
+### Visión a Largo Plazo 
+
+Este prototipo es el primer paso hacia una visión mucho más grande: construir el **protocolo de reputación descentralizado** líder en Polkadot. Queremos traducir la actividad on-chain en un puntaje de confianza (`RepScore`) que pueda desbloquear una nueva generación de servicios DeFi más justos y eficientes.
+
+Puedes leer nuestra visión completa y la arquitectura detallada en nuestro archivo **[PLAN.md](PLAN.md)**.
+
+## Prototipo Actual
+
+La aplicación web te permite:
+* Introducir una dirección de billetera de Polkadot.
+* Ver una lista de los eventos `balances.Transfer` asociados a esa dirección en los últimos bloques.
+
+## Cómo Empezar (Próximamente)
+
+```bash
+# 1. Clona el repositorio
+git clone [URL_DE_TU_REPO]
+
+# 2. Instala las dependencias
+npm install
+
+# 3. Inicia la aplicación
+npm run dev
+```
+
+## Hoja de Ruta del Prototipo
+
+- [x] Script para leer eventos de la blockchain.
+- [ ] Interfaz web para introducir la dirección.
+- [ ] API Serverless para conectar el frontend con el script.
+- [ ] Despliegue en Vercel/Netlify.
+- [ ] Añadir soporte para eventos loan.repaid de Acala.
+
+## Cómo Contribuir
+
+¡Estamos empezando! Si te interesa el proyecto, abre un "issue" o contáctanos. ¡Toda ayuda es bienvenida!

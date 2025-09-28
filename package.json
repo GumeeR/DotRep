@@ -1,0 +1,19 @@
+{
+  "name": "dotrep-scoring-engine",
+  "version": "0.1.0",
+  "description": "Scoring engine for the DotRep protocol",
+  "main": "src/scoring-engine-v1.ts",
+  "scripts": {
+    "test": "ts-node src/scoring-engine-v1.test.ts"
+  },
+  "author": "Synapse",
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "@vercel/node": "^5.3.24",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.2"
+  },
+  "dependencies": {
+    "@polkadot/api": "^16.4.8"
+  }
+}

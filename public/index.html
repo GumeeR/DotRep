@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DotRep - Simple Event Checker</title>
+    <!-- Usamos Pico.css para un diseño limpio con cero esfuerzo. No requiere clases CSS. -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
+</head>
+<body>
+    <main class="container">
+        <hgroup>
+            <h1>DotRep Simple Event Checker</h1>
+            <h2>Un prototipo para buscar eventos de una billetera en Polkadot.</h2>
+        </hgroup>
+        
+        <form id="checker-form">
+            <label for="wallet-address">Dirección de Billetera Polkadot</label>
+            <input type="text" id="wallet-address" name="wallet-address" placeholder="15Gf6EmmfRaG5i2rSH1K2r2j4n2fX2D3NzBce3cABZ3s3d1g" required>
+            <button type="submit">Buscar Eventos</button>
+        </form>
+
+        <div id="results-container">
+            <article id="loading-indicator" aria-busy="true" style="display: none;">Buscando, por favor espera... El escaneo puede tardar hasta un minuto.</article>
+        </div>
+
+    </main>
+
+    <script>
+        const form = document.getElementById('checker-form');
+        const addressInput = document.getElementById('wallet-address');
+        const resultsContainer = document.getElementById('results-container');
+        const loadingIndicator = document.getElementById('loading-indicator');
+
+        form.addEventListener('submit', async (event) => {
+            event.preventDefault(); // Evita que la página se recargue
+
+            const address = addressInput.value;
+            if (!address) {
+                resultsContainer.innerHTML = '<p>Por favor, introduce una dirección.</p>';
+                return;
+            }
+
+            // Muestra el indicador de carga y limpia resultados anteriores
+            loadingIndicator.style.display = 'block';
+            resultsContainer.innerHTML = ''; // Limpia solo el contenido previo, no el loading
+            resultsContainer.appendChild(loadingIndicator);
+
+
+            try {
+                // Llama a nuestra propia API. El navegador construye la URL completa.
+                const response = await fetch(`/api/checker?address=${address}`);
+                const data = await response.json();
+
+                loadingIndicator.style.display = 'none';
+
+                if (response.status !== 200) {
+                    throw new Error(data.error || 'Ocurrió un error en el servidor.');
+                }
+
+                let htmlResult = `<h4>Resultados para: ${data.wallet}</h4>`;
+                htmlResult += `<p>${data.message}</p>`;
+
+                if (data.events && data.events.length > 0) {
+                    htmlResult += '<ul>';
+                    data.events.forEach(eventMsg => {
+                        htmlResult += `<li>${eventMsg}</li>`;
+                    });
+                    htmlResult += '</ul>';
+                }
+                resultsContainer.innerHTML = htmlResult;
+
+            } catch (error) {
+                loadingIndicator.style.display = 'none';
+                resultsContainer.innerHTML = `<p style="color: red;"><b>Error:</b> ${error.message}</p>`;
+            }
+        });
+    </script>
+</body>
+</html>
