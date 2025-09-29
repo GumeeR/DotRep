@@ -15,8 +15,17 @@
         </hgroup>
         
         <form id="checker-form">
-            <label for="wallet-address">Dirección de Billetera Polkadot</label>
-            <input type="text" id="wallet-address" name="wallet-address" placeholder="15Gf6EmmfRaG5i2rSH1K2r2j4n2fX2D3NzBce3cABZ3s3d1g" required>
+            <div class="grid">
+                <label for="network-select">Selecciona la Red</label>
+                <select id="network-select" name="network">
+                    <option value="polkadot" selected>Polkadot</option>
+                    <option value="moonbeam">Moonbeam (Testnet)</option>
+                </select>
+            </div>
+
+            <label for="wallet-address">Dirección de Billetera</label>
+            <input type="text" id="wallet-address" name="wallet-address" placeholder="Introduce la dirección correspondiente a la red" required>
+            
             <button type="submit">Buscar Eventos</button>
         </form>
 
@@ -28,28 +37,29 @@
 
     <script>
         const form = document.getElementById('checker-form');
+        const networkSelect = document.getElementById('network-select');
         const addressInput = document.getElementById('wallet-address');
         const resultsContainer = document.getElementById('results-container');
         const loadingIndicator = document.getElementById('loading-indicator');
 
         form.addEventListener('submit', async (event) => {
-            event.preventDefault(); // Evita que la página se recargue
+            event.preventDefault();
 
+            const network = networkSelect.value;
             const address = addressInput.value;
+
             if (!address) {
                 resultsContainer.innerHTML = '<p>Por favor, introduce una dirección.</p>';
                 return;
             }
 
-            // Muestra el indicador de carga y limpia resultados anteriores
             loadingIndicator.style.display = 'block';
-            resultsContainer.innerHTML = ''; // Limpia solo el contenido previo, no el loading
+            resultsContainer.innerHTML = '';
             resultsContainer.appendChild(loadingIndicator);
 
-
             try {
-                // Llama a nuestra propia API. El navegador construye la URL completa.
-                const response = await fetch(`/api/checker?address=${address}`);
+                // El script ahora incluye el parámetro 'network' en la llamada a la API
+                const response = await fetch(`/api/checker?address=${address}&network=${network}`);
                 const data = await response.json();
 
                 loadingIndicator.style.display = 'none';
@@ -59,6 +69,7 @@
                 }
 
                 let htmlResult = `<h4>Resultados para: ${data.wallet}</h4>`;
+                htmlResult += `<p><em>Red escaneada: ${data.network}</em></p>`;
                 htmlResult += `<p>${data.message}</p>`;
 
                 if (data.events && data.events.length > 0) {

@@ -70,7 +70,7 @@ El futuro token nativo, **$REP**, tendrá las siguientes utilidades:
 
 ## 7. Hoja de Ruta Detallada
 * **Q4 2025 (Fase 1 - Prototipo Funcional):**
-    * **Hito 1:** Construir conectores de datos para Acala y HydraDX.
+    * **Hito 1:** Construir conectores de datos para Moonbeam y HydraDX.
     * **Hito 2:** Diseñar e implementar el esquema de la base de datos en PostgreSQL.
     * **Hito 3:** Implementar el algoritmo de puntuación v1 en un entorno de prueba aislado.
 * **Q1 2026 (Fase 2 - Lanzamiento en Testnet):**

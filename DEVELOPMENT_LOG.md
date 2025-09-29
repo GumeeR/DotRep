@@ -47,4 +47,4 @@ Este documento sirve como un registro cronológico de las decisiones técnicas, 
 *   **Último Suceso:**
     *   El primer intento de ejecución falló debido a un error de tipado en TypeScript (`TSError: Property 'forEach' does not exist on type 'Codec'`).
     *   **Acción Correctiva:** Se aplicó un parche al código para importar el tipo `EventRecord` y realizar un casteo explícito `(allRecords as unknown as EventRecord[])`, asegurando que el compilador trate el objeto como un array iterable.
-    *   **Siguiente Paso:** Verificar la corrección ejecutando el script `acala-connector.ts` nuevamente.
+    *   **Siguiente Paso:** Verificar la corrección ejecutando el script `moonbeam-connector.ts` nuevamente.
