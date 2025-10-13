@@ -1,9 +1,8 @@
 # DotRep: Protocolo de Reputación Cross-Chain para Polkadot
 
 **Versión:** 0.2.0
-**Status:** Conceptual - Plan de Arquitectura Detallado
-**Fecha:** 28 de Septiembre, 2025
-**Autor:** [Tu Nombre/Alias]
+**Status:** Fase 1 Completada - Planificación de Fase 2
+**Última Actualización:** Octubre 2025
 
 ## 1. Visión y Resumen
 
@@ -69,17 +68,55 @@ El futuro token nativo, **$REP**, tendrá las siguientes utilidades:
 * **Pagos:** Requerido para consultas de API de alto volumen o análisis de datos avanzados por parte de instituciones.
 
 ## 7. Hoja de Ruta Detallada
-* **Q4 2025 (Fase 1 - Prototipo Funcional):**
-    * **Hito 1:** Construir conectores de datos para Moonbeam y HydraDX.
-    * **Hito 2:** Diseñar e implementar el esquema de la base de datos en PostgreSQL.
-    * **Hito 3:** Implementar el algoritmo de puntuación v1 en un entorno de prueba aislado.
-* **Q1 2026 (Fase 2 - Lanzamiento en Testnet):**
-    * **Hito 1:** Desarrollar el contrato inteligente del RepNFT en ink!.
-    * **Hito 2:** Construir la dApp de acuñación y visualización del puntaje.
-    * **Hito 3:** Despliegue completo en la Testnet de Rococo/Westend.
-* **Q2 2026 (Fase 3 - Preparación Mainnet):**
-    * **Hito 1:** Auditoría de seguridad profesional del contrato inteligente y la infraestructura.
-    * **Hito 2:** Firmar acuerdos con al menos 2 socios "Genesis".
+
+### Fase 1 - Prototipo Funcional (✅ COMPLETADA)
+* ✅ Algoritmo de puntuación v1 implementado
+* ✅ Integración básica con Subscan API
+* ✅ Soporte para Polkadot Relay y Moonbeam
+* ✅ Interfaz web DotRep Scorecard
+* ✅ Sistema de testing básico
+* ✅ Detección automática de red
+
+**Limitaciones conocidas:**
+- Solo rastreo básico de eventos (identidad, gobernanza, transacciones)
+- Sin persistencia de datos (sin base de datos)
+- Sin conectores para Acala, HydraDX, Bifrost
+
+### Fase 2 - Expansión Multi-Chain y RepNFT (📋 PLANEADA)
+**Objetivo:** Expandir cobertura de parachains e implementar RepNFT
+
+* **Hito 1: Conectores de Parachains**
+  - Implementar conector para Acala (préstamos)
+  - Implementar conector para HydraDX (liquidez)
+  - Implementar conector para Bifrost (staking)
+
+* **Hito 2: Backend Persistente**
+  - Implementar base de datos PostgreSQL
+  - Sistema de indexación de eventos
+  - API pública para consultas de RepScore
+
+* **Hito 3: RepNFT**
+  - Contrato inteligente en ink!
+  - dApp de acuñación
+  - Despliegue en testnet (Rococo/Westend)
+
+### Fase 3 - Mainnet y Descentralización (🔜 FUTURO)
+**Objetivo:** Producción y servicio oracle descentralizado
+
+* **Hito 1: Preparación para Mainnet**
+  - Auditoría de seguridad completa
+  - Optimizaciones de gas y performance
+  - Testing extensivo en testnet
+
+* **Hito 2: DotRep Oracle**
+  - Diseño de arquitectura descentralizada
+  - Implementación de nodos oracle
+  - Sistema de staking para operadores
+
+* **Hito 3: Go-to-Market**
+  - Programa de socios Genesis (mínimo 2 protocolos)
+  - Lanzamiento de tokenomics ($REP)
+  - Gobernanza comunitaria
 
 ## 8. Riesgos y Mitigación
 * **Riesgo: Ataques Sybil / "Farming" del Puntaje.**

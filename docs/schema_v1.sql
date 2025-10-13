@@ -1,7 +1,3 @@
--- DotRep - Esquema de Base de Datos v1 (Conceptual)
--- Author: Synapse, Lead Technical Architect
--- Este esquema está archivado y representa la visión a largo plazo (ver PLAN.md).
-
 -- ENUM para las parachains que soportamos en la visión a largo plazo.
 CREATE TYPE parachain_name AS ENUM (
     'ACALA',

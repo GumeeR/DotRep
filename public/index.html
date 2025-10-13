@@ -1,53 +1,227 @@
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DotRep - Simple Event Checker</title>
-    <!-- Usamos Pico.css para un diseño limpio con cero esfuerzo. No requiere clases CSS. -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@picocss/pico@1/css/pico.min.css">
-</head>
-<body>
-    <main class="container">
-        <hgroup>
-            <h1>DotRep Simple Event Checker</h1>
-            <h2>Un prototipo para buscar eventos de una billetera en Polkadot.</h2>
-        </hgroup>
+    <title>DotRep Scorecard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background-color: #FFFFFF;
+            --text-color: #1d1f21;
+            --primary-color: #E6007A;
+            --border-color: #EAEAEA;
+            --card-bg-color: #FFFFFF;
+            --score-green: #2e7d32;
+            --score-yellow: #fbc02d;
+            --score-red: #d32f2f;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 2rem;
+        }
+
+        #particles-js {
+            position: fixed;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            z-index: -1;
+        }
+
+        main {
+            width: 100%;
+            max-width: 600px;
+            text-align: center;
+            margin: 2rem auto;
+            background-color: var(--card-bg-color);
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.08);
+            z-index: 1;
+        }
+
+        h1 {
+            font-weight: 700;
+        }
         
+        form {
+            display: grid;
+            grid-template-columns: 1fr auto;
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        input, select, button {
+            font-family: 'Poppins', sans-serif;
+            padding: 0.75rem;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            background-color: #FFFFFF;
+            color: var(--text-color);
+            font-size: 1rem;
+        }
+        
+        input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(230, 0, 122, 0.1);
+        }
+
+        button {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            color: white;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(230, 0, 122, 0.2);
+        }
+
+        button:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(230, 0, 122, 0.35);
+        }
+
+        #results-container {
+            margin-top: 2rem;
+        }
+
+        .scorecard {
+            background-color: var(--card-bg-color);
+            border-radius: 12px;
+            padding: 2rem;
+            border: 1px solid var(--border-color);
+        }
+
+        .scorecard p {
+            margin: 0;
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        .scorecard h2 {
+            font-size: 4rem;
+            font-weight: 700;
+            margin: 0.5rem 0;
+        }
+
+        .score-green { color: var(--score-green); }
+        .score-yellow { color: var(--score-yellow); }
+        .score-red { color: var(--score-red); }
+
+        .details {
+            margin-top: 2rem;
+            text-align: left;
+            opacity: 0.8;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+        }
+
+        article[aria-busy='true'] {
+            color: var(--primary-color);
+        }
+    </style>
+</head>
+
+<body>
+    <div id="particles-js"></div>
+
+    <main>
+        <header>
+            <h1>DotRep Scorecard</h1>
+            <p>Analiza la reputación on-chain de cualquier billetera.</p>
+        </header>
+
         <form id="checker-form">
-            <div class="grid">
-                <label for="network-select">Selecciona la Red</label>
-                <select id="network-select" name="network">
-                    <option value="polkadot" selected>Polkadot</option>
-                    <option value="moonbeam">Moonbeam (Testnet)</option>
-                </select>
-            </div>
-
-            <label for="wallet-address">Dirección de Billetera</label>
-            <input type="text" id="wallet-address" name="wallet-address" placeholder="Introduce la dirección correspondiente a la red" required>
-            
-            <button type="submit">Buscar Eventos</button>
+            <input type="text" id="wallet-address" name="wallet-address" placeholder="Introduce una dirección de Polkadot o Moonbeam" required>
+            <button type="submit">Calcular RepScore</button>
         </form>
-
+        
         <div id="results-container">
-            <article id="loading-indicator" aria-busy="true" style="display: none;">Buscando, por favor espera... El escaneo puede tardar hasta un minuto.</article>
+            <article id="loading-indicator" aria-busy='true' style="display: none;">Calculando...</article>
         </div>
-
     </main>
 
+    <script src="https://cdn.jsdelivr.net/npm/particles.js@2.0.0/particles.min.js"></script>
     <script>
+        particlesJS('particles-js', {
+            "particles": {
+                "number": {
+                    "value": 60,
+                    "density": {
+                        "enable": true,
+                        "value_area": 800
+                    }
+                },
+                "color": {
+                    "value": "#E6007A"
+                },
+                "shape": {
+                    "type": "circle"
+                },
+                "opacity": {
+                    "value": 0.5,
+                    "random": true
+                },
+                "size": {
+                    "value": 3,
+                    "random": true
+                },
+                "line_linked": {
+                    "enable": true,
+                    "distance": 150,
+                    "color": "#E6007A",
+                    "opacity": 0.1,
+                    "width": 1
+                },
+                "move": {
+                    "enable": true,
+                    "speed": 1,
+                    "direction": "none",
+                    "random": false,
+                    "straight": false,
+                    "out_mode": "out"
+                }
+            },
+            "interactivity": {
+                "detect_on": "canvas",
+                "events": {
+                    "onhover": {
+                        "enable": true,
+                        "mode": "grab"
+                    },
+                    "onclick": {
+                        "enable": false
+                    },
+                    "resize": true
+                },
+                "modes": {
+                    "grab": {
+                        "distance": 140,
+                        "line_opacity": 0.3
+                    }
+                }
+            },
+            "retina_detect": true
+        });
+
         const form = document.getElementById('checker-form');
-        const networkSelect = document.getElementById('network-select');
         const addressInput = document.getElementById('wallet-address');
         const resultsContainer = document.getElementById('results-container');
         const loadingIndicator = document.getElementById('loading-indicator');
 
         form.addEventListener('submit', async (event) => {
             event.preventDefault();
-
-            const network = networkSelect.value;
             const address = addressInput.value;
-
             if (!address) {
                 resultsContainer.innerHTML = '<p>Por favor, introduce una dirección.</p>';
                 return;
@@ -57,33 +231,50 @@
             resultsContainer.innerHTML = '';
             resultsContainer.appendChild(loadingIndicator);
 
+            const network = address.startsWith('0x') ? 'moonbeam' : 'polkadot';
+
             try {
-                // El script ahora incluye el parámetro 'network' en la llamada a la API
                 const response = await fetch(`/api/checker?address=${address}&network=${network}`);
                 const data = await response.json();
-
+                
                 loadingIndicator.style.display = 'none';
 
                 if (response.status !== 200) {
                     throw new Error(data.error || 'Ocurrió un error en el servidor.');
                 }
 
-                let htmlResult = `<h4>Resultados para: ${data.wallet}</h4>`;
-                htmlResult += `<p><em>Red escaneada: ${data.network}</em></p>`;
-                htmlResult += `<p>${data.message}</p>`;
-
-                if (data.events && data.events.length > 0) {
-                    htmlResult += '<ul>';
-                    data.events.forEach(eventMsg => {
-                        htmlResult += `<li>${eventMsg}</li>`;
-                    });
-                    htmlResult += '</ul>';
+                const repScore = data.repScore;
+                let scoreClass = 'score-yellow';
+                if (repScore > 650) {
+                    scoreClass = 'score-green';
+                } else if (repScore < 500) {
+                    scoreClass = 'score-red';
                 }
-                resultsContainer.innerHTML = htmlResult;
+
+                const scoreCardHtml = `
+                    <article class="scorecard">
+                        <p>Tu RepScore es:</p>
+                        <h2 class="${scoreClass}">${repScore}</h2>
+                    </article>
+                `;
+                
+                let detailsHtml = '<div class="details">';
+                if (data.events && data.events.length > 0) {
+                    detailsHtml += `<h5>Eventos Relevantes Encontrados:</h5><ul>`;
+                    data.events.forEach(eventMsg => {
+                        detailsHtml += `<li>${eventMsg}</li>`;
+                    });
+                    detailsHtml += '</ul>';
+                } else {
+                    detailsHtml += '<p>No se encontraron eventos relevantes en el historial reciente.</p>';
+                }
+                detailsHtml += '</div>';
+
+                resultsContainer.innerHTML = scoreCardHtml + detailsHtml;
 
             } catch (error) {
                 loadingIndicator.style.display = 'none';
-                resultsContainer.innerHTML = `<p style="color: red;"><b>Error:</b> ${error.message}</p>`;
+                resultsContainer.innerHTML = `<p style="color: var(--score-red);"><b>Error:</b> ${error.message}</p>`;
             }
         });
     </script>

@@ -1,125 +1,141 @@
-// DotRep - API Endpoint Cross-Chain v2
-// Author: Synapse
-// Soporta múltiples cadenas (Polkadot, Moonbeam) a través de un parámetro en la URL.
-
-import '@moonbeam-network/api-augment';
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { ApiPromise, WsProvider } from '@polkadot/api';
-import type { EventRecord } from '@polkadot/types/interfaces';
+import { calculateRepScoreV1 } from '../src/scoring-engine-v1';
 
-// --- CONFIGURACIÓN DE CADENAS ---
-type NetworkConfig = {
-    rpc: string;
-};
-
-const NETWORKS: Record<string, NetworkConfig> = {
-    polkadot: {
-        rpc: 'wss://rpc.polkadot.io',
-    },
-    moonbeam: { // Changed from acala
-        rpc: 'wss://wss.api.moonbase.moonbeam.network', // New RPC for Moonbeam
-    }
-};
-
-const BLOCKS_TO_SCAN = 100;
-
-// --- LÓGICA DE ESCANEO ESPECÍFICA POR CADENA ---
-
-/**
- * Escanea la red de Polkadot en busca de eventos 'balances.Transfer'.
- */
-async function scanPolkadot(api: ApiPromise, targetAddress: string): Promise<string[]> {
-    const latestHeader = await api.rpc.chain.getHeader();
-    const latestBlockNumber = latestHeader.number.toNumber();
-    const startBlock = Math.max(0, latestBlockNumber - BLOCKS_TO_SCAN);
-    const foundEvents: string[] = [];
-
-    for (let i = latestBlockNumber; i > startBlock; i--) {
-        const blockHash = await api.rpc.chain.getBlockHash(i);
-        const allRecords = await api.query.system.events.at(blockHash);
-
-        (allRecords as unknown as EventRecord[]).forEach(record => {
-            const { event } = record;
-            if (event.section === 'balances' && event.method === 'Transfer') {
-                const [from, to] = event.data;
-                if (from.toString() === targetAddress || to.toString() === targetAddress) {
-                    foundEvents.push(`Evento 'balances.Transfer' encontrado en el bloque #${i}`);
-                }
-            }
-        });
-    }
-    return foundEvents;
+interface BlockchainEvent {
+    timestamp: Date;
+    value?: number;
 }
 
-/**
- * Escanea la red de Moonbeam (Moonbase Alpha) en busca de eventos 'balances.Transfer'.
- */
-async function scanMoonbeam(api: ApiPromise, targetAddress: string): Promise<string[]> {
-    const latestHeader = await api.rpc.chain.getHeader();
-    const latestBlockNumber = latestHeader.number.toNumber();
-    const startBlock = Math.max(0, latestBlockNumber - BLOCKS_TO_SCAN);
-    const foundEvents: string[] = [];
-
-    for (let i = latestBlockNumber; i > startBlock; i--) {
-        const blockHash = await api.rpc.chain.getBlockHash(i);
-        const allRecords = await api.query.system.events.at(blockHash);
-
-        (allRecords as unknown as EventRecord[]).forEach(record => {
-            const { event } = record;
-            if (event.section === 'balances' && event.method === 'Transfer') {
-                const [from, to] = event.data;
-                if (from.toString() === targetAddress || to.toString() === targetAddress) {
-                    foundEvents.push(`Evento 'balances.Transfer' encontrado en el bloque #${i}`);
-                }
-            }
-        });
-    }
-    return foundEvents;
+interface WalletData {
+    acala: { loanRepaid: BlockchainEvent[]; loanLiquidated: BlockchainEvent[]; };
+    hydraDx: { omnipoolLpAdded: BlockchainEvent[]; };
+    bifrost: { stakingJoined: BlockchainEvent[]; };
+    moonbeam: { governanceVoted: BlockchainEvent[]; };
+    polkadotRelay: { identitySet: BlockchainEvent[]; };
+    generic: { walletCreationDate: Date; transactionCountLastMonth: number; };
 }
 
-// --- API HANDLER PRINCIPAL ---
+const SUBSCAN_NETWORK_MAP: Record<string, string> = {
+    polkadot: 'polkadot',
+    moonbeam: 'moonbase',
+};
+
+// Consulta API de Subscan
+async function subscanFetch(network: string, body: object): Promise<any> {
+    const SUBSCAN_API = process.env.SUBSCAN_API;
+    if (!SUBSCAN_API) {
+        throw new Error('Clave de API de Subscan no configurada.');
+    }
+
+    const subscanDomain = SUBSCAN_NETWORK_MAP[network];
+    if (!subscanDomain) {
+        throw new Error(`Red no soportada: ${network}`);
+    }
+
+    const response = await fetch(`https://${subscanDomain}.api.subscan.io/api/v2/scan/extrinsics`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-API-Key': SUBSCAN_API,
+        },
+        body: JSON.stringify(body),
+    });
+
+    if (!response.ok) throw new Error(`Error de Subscan: ${response.statusText}`);
+    const responseBody = await response.json();
+    if (responseBody.code !== 0) throw new Error(`Error de Subscan: ${responseBody.message}`);
+    return responseBody.data;
+}
+
+// Obtiene eventos on-chain de la wallet
+async function scanViaSubscan(network: string, targetAddress: string): Promise<Partial<WalletData>> {
+    const recentHistoryData = await subscanFetch(network, { row: 100, page: 0, address: targetAddress });
+    const totalExtrinsics = recentHistoryData?.count || 0;
+    const recentExtrinsics = recentHistoryData?.extrinsics || [];
+    let walletCreationDate = new Date();
+
+    // Obtiene fecha de creación desde el primer extrinsic
+    if (totalExtrinsics > 0) {
+        const rowsPerPage = 100;
+        const lastPage = Math.floor((totalExtrinsics - 1) / rowsPerPage);
+        const oldestHistoryData = await subscanFetch(network, { row: rowsPerPage, page: lastPage, address: targetAddress });
+        const oldestExtrinsics = oldestHistoryData?.extrinsics || [];
+        if (oldestExtrinsics.length > 0) {
+            const firstExtrinsic = oldestExtrinsics[oldestExtrinsics.length - 1];
+            walletCreationDate = new Date(firstExtrinsic.block_timestamp * 1000);
+        }
+    }
+
+    const identitySet: BlockchainEvent[] = [];
+    const governanceVoted: BlockchainEvent[] = [];
+    let transferCount = 0;
+    const stringEvents: string[] = [];
+
+    // Procesa extrinsics y filtra eventos relevantes
+    for (const extrinsic of recentExtrinsics) {
+        const timestamp = new Date(extrinsic.block_timestamp * 1000);
+        if (extrinsic.call_module === 'balances' && extrinsic.call_module_function.startsWith('transfer')) {
+            transferCount++;
+            stringEvents.push(`Extrínseco 'balances.transfer' encontrado en bloque ${extrinsic.block_num}`);
+        }
+        if ((extrinsic.call_module === 'convictionVoting' || extrinsic.call_module === 'democracy') && extrinsic.call_module_function === 'vote') {
+            governanceVoted.push({ timestamp, value: 1 });
+            stringEvents.push(`Voto de gobernanza encontrado en bloque ${extrinsic.block_num}`);
+        }
+        if (extrinsic.call_module === 'identity' && extrinsic.call_module_function === 'set_identity') {
+            identitySet.push({ timestamp, value: 1 });
+            stringEvents.push(`Identidad establecida encontrada en bloque ${extrinsic.block_num}`);
+        }
+    }
+
+    return {
+        polkadotRelay: { identitySet },
+        moonbeam: { governanceVoted },
+        generic: { transactionCountLastMonth: transferCount, walletCreationDate },
+        __stringEvents: stringEvents,
+    } as any;
+}
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-    let api: ApiPromise | undefined;
-    const network = req.query.network as string || 'polkadot'; // Polkadot por defecto
+    const network = req.query.network as string || 'polkadot';
     const targetAddress = req.query.address as string;
 
     try {
-        if (!targetAddress) {
-            return res.status(400).json({ error: 'El parámetro "address" es requerido.' });
-        }
+        if (!targetAddress) return res.status(400).json({ error: 'El parámetro "address" es requerido.' });
+        if (!SUBSCAN_NETWORK_MAP[network]) return res.status(400).json({ error: `Red no soportada.` });
 
-        const selectedNetwork = NETWORKS[network];
-        if (!selectedNetwork) {
-            return res.status(400).json({ error: `Red no soportada. Redes disponibles: ${Object.keys(NETWORKS).join(', ')}` });
-        }
+        const realData = await scanViaSubscan(network, targetAddress);
 
-        const wsProvider = new WsProvider(selectedNetwork.rpc);
-        api = await ApiPromise.create({ provider: wsProvider });
-        await api.isReady;
+        let walletData: WalletData = {
+            acala: { loanRepaid: [], loanLiquidated: [] },
+            hydraDx: { omnipoolLpAdded: [] },
+            bifrost: { stakingJoined: [] },
+            moonbeam: { governanceVoted: [] },
+            polkadotRelay: { identitySet: [] },
+            generic: { walletCreationDate: new Date(), transactionCountLastMonth: 0 },
+        };
 
-        let foundEvents: string[] = [];
-        // Selecciona la función de escaneo correcta según la red
-        if (network === 'moonbeam') { // Changed from acala
-            foundEvents = await scanMoonbeam(api, targetAddress);
-        } else {
-            foundEvents = await scanPolkadot(api, targetAddress);
-        }
+        walletData = {
+            ...walletData,
+            polkadotRelay: { ...walletData.polkadotRelay, ...realData.polkadotRelay },
+            moonbeam: { ...walletData.moonbeam, ...realData.moonbeam },
+            generic: { ...walletData.generic, ...realData.generic },
+        };
+
+        const repScore = calculateRepScoreV1(walletData);
+        const stringEvents = (realData as any).__stringEvents || [];
 
         res.status(200).json({
-            network: network,
             wallet: targetAddress,
-            blocksScanned: BLOCKS_TO_SCAN,
-            events: foundEvents,
-            message: foundEvents.length > 0 ? `Se encontraron ${foundEvents.length} eventos.` : 'No se encontraron eventos relevantes en los bloques recientes.'
+            network: network,
+            repScore: repScore,
+            events: stringEvents,
+            scoreFactors: walletData,
         });
 
     } catch (error) {
         console.error(`[API_ERROR][${network}]`, error);
-        res.status(500).json({ error: 'Ha ocurrido un error en el servidor al procesar la petición.' });
-    } finally {
-        if (api) {
-            await api.disconnect();
-        }
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        res.status(500).json({ error: `Error interno del servidor: ${errorMessage}` });
     }
 }
